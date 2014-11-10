@@ -78,6 +78,10 @@ if [ ! "${destination}" ]; then
      exit 1
 fi
 
+if [ ! "${destination}" ]; then
+     echo "Error: Missing path for the result/destination"
+     exit 1
+fi
 
 # Load the configuration file to determine the geometry field
 DATA_CFG_FILE=data.cfg

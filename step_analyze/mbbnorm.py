@@ -20,7 +20,7 @@ def main():
     space_y_span = space_max_y - space_min_y
 
     for line in sys.stdin:
-        sp = line.strip().split("\t")
+        sp = line.strip().split(" ")
         minx = float(sp[1])
         minx = (minx - space_min_x) / space_x_span
 
