@@ -69,6 +69,7 @@ int main(int argc, char **argv) {
 
   long count = 1;
   while(cin && getline(cin, input_line) && !cin.eof()){
+    try {
     fields = parse(input_line);
     //if (fields[ID_IDX].length() <1 )
     //  continue ;  // skip lines which has empty id field 
@@ -83,6 +84,11 @@ int main(int argc, char **argv) {
     // try {
     geom = wkt_reader->read(fields[GEOM_IDX]);
     env = geom->getEnvelopeInternal();
+    } catch (...) {
+       continue;
+    }
+    cout << input_line << endl;
+    continue;
     if ( (double) rand() / (double) (RAND_MAX) < ratio) {
         cout << count++ << TAB  << env->getMinX() << TAB << env->getMinY() << TAB 
           << env->getMaxX() << TAB << env->getMaxY() << endl;
