@@ -34,6 +34,7 @@ method="fg"
 statistics="false"
 num_reducers=""
 qdistance=0
+fields=""
 
 while : 
 do
@@ -112,6 +113,14 @@ do
           ;;
         --method=*)
           method=${1#*=}
+          shift
+          ;;
+        -f | --fields)
+          fields=$2
+          shift 2
+          ;;
+        --fields=*)
+          fields=${1#*=}
           shift
           ;;
         --)
@@ -293,7 +302,7 @@ echo "${REDUCER_2} -p ${predicate} -i ${geomid1} -j ${geomid2} -s ${statistics}"
 
 
 #Perform spatial join
-hadoop jar ${HJAR} -input ${INPUT_2A} -input ${INPUT_2B} -output ${OUTPUT_2} -file ${MAPPER_2_PATH} -file ${REDUCER_2_PATH} -file ${SATO_INDEX_FILE_NAME}  -mapper "${MAPPER_2} ${geomid1} ${geomid2} ${SATO_INDEX_FILE_NAME} ${prefixpath1} ${prefixpath2}" -reducer "${REDUCER_2} -p ${predicate} -i ${geomid1} -j ${geomid2} -s ${statistics} -d ${qdistance}" -cmdenv LD_LIBRARY_PATH=${LD_CONFIG_PATH} -numReduceTasks ${num_reducers}
+hadoop jar ${HJAR} -input ${INPUT_2A} -input ${INPUT_2B} -output ${OUTPUT_2} -file ${MAPPER_2_PATH} -file ${REDUCER_2_PATH} -file ${SATO_INDEX_FILE_NAME}  -mapper "${MAPPER_2} ${geomid1} ${geomid2} ${SATO_INDEX_FILE_NAME} ${prefixpath1} ${prefixpath2}" -reducer "${REDUCER_2} -p ${predicate} -i ${geomid1} -j ${geomid2} -s ${statistics} -d ${qdistance} -f ${fields}" -cmdenv LD_LIBRARY_PATH=${LD_CONFIG_PATH} -numReduceTasks ${num_reducers}
 
 if [  $? -ne 0 ]; then
    echo "Spatial computation has failed!"
