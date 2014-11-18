@@ -247,7 +247,7 @@ if [  $? -ne 0 ]; then
 fi
 
 # Determine the optimal bucket count
-partitionSize=50000
+partitionSize=5000
 
 echo "partitionsize=${partitionSize}"
 
