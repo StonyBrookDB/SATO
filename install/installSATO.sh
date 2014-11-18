@@ -73,6 +73,9 @@ SATO_LIB_PATH=$libpath
 export SATO_INC_PATH=$incpath
 export SATO_LIB_PATH=$libpath
 
+echo "export SATO_INC_PATH=$incpath" > ~/.bashrc
+echo "export SATO_LIB_PATH=$libpath" > ~/.bashrc
+
 # Save the paths
 echo "SATO_INC_PATH=${SATO_INC_PATH}" > ../sato.cfg
 echo "SATO_LIB_PATH=${SATO_LIB_PATH}" >> ../sato.cfg

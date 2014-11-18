@@ -49,7 +49,7 @@ const int SID_2 = 2;
 
 // separators for parsing
 const string TAB = "\t";
-const string SEP = "\x02"; // ctrl+a
+const string SEP = "\t"; // ctrl+a
 const string BAR = "|";
 const string DASH= "-";
 const string COMMA = ",";
