@@ -314,7 +314,7 @@ hdfs dfs -rm -f -r ${OUTPUT_5}
 
 echo "Mapping data to create physical partitions"
 #Map the data back to its partition
-hadoop jar ${HJAR} -libjars ../libjar/customLibs.jar -outputformat com.custom.CustomMultiOutputFormat  -input ${INPUT_1} -output ${OUTPUT_5} -file ${MAPPER_5_PATH} -file ${REDUCER_5_PATH} -file ${SATO_INDEX_FILE_NAME}  -mapper "${MAPPER_5} ${geomid} ${SATO_INDEX_FILE_NAME}" -reducer "${REDUCER_5} cat" -cmdenv LD_LIBRARY_PATH=${LD_CONFIG_PATH} -numReduceTasks 1
+hadoop jar ${HJAR} -libjars ../libjar/customLibs.jar -outputformat com.custom.CustomMultiOutputFormat  -input ${INPUT_1} -output ${OUTPUT_5} -file ${MAPPER_5_PATH} -file ${REDUCER_5_PATH} -file ${SATO_INDEX_FILE_NAME}  -mapper "${MAPPER_5} ${geomid} ${SATO_INDEX_FILE_NAME}" -reducer "${REDUCER_5} cat" -cmdenv LD_LIBRARY_PATH=${LD_CONFIG_PATH} -numReduceTasks 0
 
 if [  $? -ne 0 ]; then
    echo "Mapping data back to its partition has failed!"
