@@ -2,7 +2,7 @@
 
 # Configuring lib and include directories
 usage(){
-  echo -e "containmentQuery.sh [options]\n \
+  echo -e "containmentQueryGeom.sh [options]\n \
   -p HDFS_PATH_PREFIX, --prefix=HDFS_PATH_PREFIX \t HDFS prefix to the data set (used in the loaded step) \n \
   -d DESTINATION_RESULT_PATH, --destination=DESTINATION_RESULT_PATH \t The destination for the result data (HDFS path) \n \
   -f FILE_PATH, --file=FILE_PATH \t The file name containing the geometry of the query window \
