@@ -44,6 +44,11 @@ int main(int argc, char **argv) {
   double min_y;
   double max_y;
 
+  if (argc < 3) {
+     cerr << "Not enough arguments:" << argv[0] << " [geomidx] [ratio] " << endl;
+     return -1;
+  }
+
   GEOM_IDX = atoi(argv[1]) -1;
   if (GEOM_IDX < 0) {
     cerr << "Invalid arguments for field indices" << endl;

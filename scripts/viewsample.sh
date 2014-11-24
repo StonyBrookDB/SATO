@@ -4,7 +4,7 @@
 usage(){
   echo -e "filter.sh [options]\n \
   -p HDFS_PATH_PREFIX, --prefix=HDFS_PATH_PREFIX \t directory path to the include locations \n \
-  -n NUMBER_OF_LINES, --numlines==NUMBER_OF_LINES \t The number of lines to display \n \
+  -n NUMBER_OF_LINES, --numlines==NUMBER_OF_LINES \t The number of lines to display \
 "
   exit 1
 }
@@ -60,14 +60,14 @@ LD_CONFIG_PATH=${LD_LIBRARY_PATH}:${SATO_LIB_PATH}
 
 
 if [ ! "${datapath}" ]; then
-     echo "Error: Missing path to the loaded data"
+     echo "Error: Missing path to the loaded data. See --help"
      exit 1
 fi
 
+PARTITION_FILE=partfile.idx
+number=$(hdfs dfs -cat ${datapath}/${PARTITION_FILE} | head -n 1 | cut -f1)
 
-
-INPUT_1=${datapath}'/data/1/*'
-OUTPUT_1=${destination}
+INPUT_1=${datapath}/data/${number}/*
 
 # Hide the partition ID field
 hdfs dfs -cat ${INPUT_1} | head -n ${numlines} | cut -f 3-

@@ -1,17 +1,6 @@
 #include "resquecommon.h"
 #include <iostream>
 
-/* The program extracts the minimum bounding boxes of objects */
-
-/* Extract the MBBs of spatial objects. 
- * Commandline arguments: 
- *         argv1 is the field number of the object ID, 
- *         argv2 is the sampling ratio 
- *         (counting from 1)
- * Output format:
- *         some_id min_x TAB min_y TAB max_x TAB max_y
- * */
-
 
 GeometryFactory *gf = NULL;
 WKTReader *wkt_reader = NULL;
@@ -41,7 +30,8 @@ int main(int argc, char **argv) {
   double max_y;
 
   if (argc < 6) {
-	cerr << "Usage: "<< argv[0] << " [min_x] [min_y] [max_x] [max_y] [geomid]" << endl;
+	cerr << "Usage: "<< argv[0] << " [min_x] [min_y] [max_x] [max_y] [geomid] [filename]" << endl;
+        cerr << " filename is optional - the file should contain a geometry of the range query " << endl;
         return -1;
   }
 
@@ -56,18 +46,26 @@ int main(int argc, char **argv) {
   wkt_reader= new WKTReader(gf);
 
   Geometry* window;
-  stringstream ss;
-  min_x = strtod(argv[1], NULL);
-  min_y = strtod(argv[2], NULL);
-  max_x = strtod(argv[3], NULL);
-  max_y = strtod(argv[4], NULL);
+  if (argc == 6) {
+    stringstream ss;
+    min_x = strtod(argv[1], NULL);
+    min_y = strtod(argv[2], NULL);
+    max_x = strtod(argv[3], NULL);
+    max_y = strtod(argv[4], NULL);
 
-  ss << shapebegin << min_x << SPACE << min_y << COMMA
+    ss << shapebegin << min_x << SPACE << min_y << COMMA
          << min_x << SPACE << max_y << COMMA
          << max_x << SPACE << max_y << COMMA
          << max_x << SPACE << min_y << COMMA
          << min_x << SPACE << min_y << shapeend;
-  window = wkt_reader->read(ss.str());
+     window = wkt_reader->read(ss.str());
+  } else {
+     std::ifstream windowFile(argv[6]);
+     string input;
+     std::getline(windowFile, input);
+     window = wkt_reader->read(input);
+
+  }
   // process input data 
   //
   map<int,Geometry*> geom_polygons;

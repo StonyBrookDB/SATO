@@ -48,7 +48,7 @@ def main():
 		#str += " -input " + fileName + " "
         #str.append(" -input ").append(fileName)
     
-    sys.stdout.write(str)
+    #sys.stdout.write(str)
 
     sys.stdout.flush()
     sys.stderr.flush()

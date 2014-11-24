@@ -297,6 +297,7 @@ REDUCER_2_PATH=../joiner/resque
 hdfs dfs -rm -f -r ${OUTPUT_2}
 
 
+hdfs dfs -rm -f -r ${OUTPUT_1}
 predicate="st_"${predicate}
 
 echo "${MAPPER_2} ${geomid1} ${geomid2} ${SATO_INDEX_FILE_NAME} ${prefixpath1} ${prefixpath2}"
@@ -325,10 +326,10 @@ hadoop jar ${HJAR} -file ${REDUCER_3_PATH} -mapper 'cat -' -reducer "${REDUCER_3
 
 succ=$?
 
+hdfs dfs -rm -r ${OUTPUT_2}
 if [[ $succ != 0 ]] ; then
     echo -e "\n\n deduplication stage has failed. \nPlease check the output result for debugging."
     exit $succ
 fi
-hdfs dfs -rm ${OUTPUT_2}
 
 echo "Done. Results are available at ${OUTPUT_3}"

@@ -8,7 +8,9 @@ usage(){
   -g GEOM_ID, --geomid=GEOM_ID \t The field (position) of the geometry field (starts from 1) \n \
   -s SEPARATOR, --separator=SEPARATOR \t OPTIONAL - The seperator/delimiter used to separate fields in the original dataset. The default value is tab. \n \
   -r SAMPLING_RATIO, --ratio=SAMPLING_RATIO \t OPTIONAL - The sampling ratio to be used to partition data. Default value is 1.0. \n \
-  -m PARTITION_METHOD, --method=PARTITION_METHOD \t OPTIONAL - The partitioning method. The default method is fixed grid partitioning. Options include: fg (fixed grid), bsp (binary space partitioning), sfc (space filling curve). \n \
+  -m PARTITION_METHOD, --method=PARTITION_METHOD \t OPTIONAL - The partitioning method. The default method is fixed grid partitioning. Options include: fg (fixed grid), bsp (binary space partitioning), sfc (space filling curve) \n \
+  -n NUMBER_REDUCERS, --numreducers=NUMBER_REDUCERS \t OPTIONAL - The number of reducers we need to use \n \
+  -b BLOCK_SIZE, --blocksize=BLOCK_SIZE \t OPTIONAL - The block size in bytes (the default block size is 64MB).\
 "
  # -i OBJECT_ID, --obj_id=OBJECT_ID \t The field (position) of the object ID \n \
   exit 1
@@ -16,7 +18,8 @@ usage(){
 
 # Setting global variables
 HJAR=${HADOOP_STREAMING_PATH}/hadoop-streaming.jar
-blockSize=32000000
+# default block size (partition size)
+blocksize=67108864
 SATO_CONFIG_FILE_NAME=data.cfg
 SATO_INDEX_FILE_NAME=partfile.idx
 
@@ -27,6 +30,7 @@ geomid=""
 delimiter=""
 sample_ratio=1
 method="fg"
+numreducers=20
 
 while : 
 do
@@ -91,6 +95,22 @@ do
           method=${1#*=}
           shift
           ;;
+        -n | --numreducers)
+          numreducers=$2
+          shift 2
+          ;;
+        --numreducers=*)
+          numreducers=${1#*=}
+          shift
+          ;;
+        -b | --blocksize)
+          blocksize=$2
+          shift 2
+          ;;
+        --blocksize=*)
+          blocksize=${1#*=}
+          shift
+          ;;
         --)
           shift
           break
@@ -137,6 +157,7 @@ fi
 
 
 # Creating the path with the HDFS prefix
+hdfs dfs -rm -rf ${prefixpath}
 hdfs dfs -mkdir -p ${prefixpath}
 
 INPUT_1=${datapath}
@@ -185,7 +206,7 @@ if [ $? -ne 0 ]; then
    exit 1
 fi
 
-echo Done extracting object MBRs""
+echo "Done extracting object MBRs"
 
 # Determine the min, max dimensions of the space
 INPUT_3=${OUTPUT_2}
@@ -203,20 +224,14 @@ hadoop jar ${HJAR} -input ${INPUT_3} -output ${OUTPUT_3} -file ${MAPPER_3_PATH} 
 # TEMP_FILE_NAME=tmpSpaceDimension
 #rm $TEMP_FILE_NAME
 #create a temporary file
-TEMP_FILE_NAME="$(mktemp)"
+# TEMP_FILE_NAME="$(mktemp)"
 hdfs dfs -cat ${OUTPUT_3}/part-00000 > ${TEMP_FILE_NAME}
-
-min_x=`(cat ${TEMP_FILE_NAME} | cut -f1)`
-min_y=`(cat ${TEMP_FILE_NAME} | cut -f2)`
-max_x=`(cat ${TEMP_FILE_NAME} | cut -f3)`
-max_y=`(cat ${TEMP_FILE_NAME} | cut -f4)`
-num_objects=`(cat ${TEMP_FILE_NAME} | cut -f5)`
+read min_x min_y max_x max_y num_objects <<< `(hdfs dfs -cat ${OUTPUT_3}/part-00000)`
 
 #rm -f ${TEMP_FILE_NAME}
 hdfs dfs -rm -f -r ${OUTPUT_3}
 
-TEMP_CFG_FILE=${TEMP_FILE_NAME}
-# SATO_DATA_CFG=data.cfg
+TEMP_CFG_FILE="$(mktemp)"
 
 # Outputting the space dimensions
 echo ${min_x}
@@ -257,7 +272,7 @@ echo "Total size in bytes: "${totalSize}
 echo "Number of objects: "${num_objects}
 avgObjSize=$((totalSize / num_objects))
 
-partitionSize=$((blockSize / avgObjSize))
+partitionSize=$((blocksize / avgObjSize))
 
 echo "partitionsize=${partitionSize}" >> ${TEMP_CFG_FILE}
 
@@ -300,7 +315,6 @@ python ../step_tear/denormalize.py ${min_x} ${min_y} ${max_x} ${max_y}  < ${PART
 # Copy the partition region mbb file onto HDFS
 rm ${PARTITION_FILE}
 cp ${PARTITION_FILE_DENORM} ${SATO_INDEX_FILE_NAME}
-hdfs dfs -put ${PARTITION_FILE_DENORM} ${prefixpath}/${SATO_INDEX_FILE_NAME}
 
 
 INPUT_5=${OUTPUT_1}
@@ -314,14 +328,19 @@ hdfs dfs -rm -f -r ${OUTPUT_5}
 
 echo "Mapping data to create physical partitions"
 #Map the data back to its partition
-hadoop jar ${HJAR} -libjars ../libjar/customLibs.jar -outputformat com.custom.CustomMultiOutputFormat  -input ${INPUT_1} -output ${OUTPUT_5} -file ${MAPPER_5_PATH} -file ${REDUCER_5_PATH} -file ${SATO_INDEX_FILE_NAME}  -mapper "${MAPPER_5} ${geomid} ${SATO_INDEX_FILE_NAME}" -reducer "${REDUCER_5} cat" -cmdenv LD_LIBRARY_PATH=${LD_CONFIG_PATH} -numReduceTasks 1
+hadoop jar ${HJAR} -libjars ../libjar/customLibs.jar -outputformat com.custom.CustomMultiOutputFormat  -input ${INPUT_1} -output ${OUTPUT_5} -file ${MAPPER_5_PATH} -file ${REDUCER_5_PATH} -file ${SATO_INDEX_FILE_NAME}  -mapper "${MAPPER_5} ${geomid} ${SATO_INDEX_FILE_NAME}" -reducer "${REDUCER_5} cat" -cmdenv LD_LIBRARY_PATH=${LD_CONFIG_PATH} -numReduceTasks ${numreducers}
 
 if [  $? -ne 0 ]; then
    echo "Mapping data back to its partition has failed!"
 fi
 
-rm -f ${SATO_INDEX_FILE_NAME}
+#hdfs dfs -rm ${prefixpath}/${SATO_INDEX_FILE_NAME}
+hdfs dfs -cat ${prefixpath}/data/Stat/* | ../tiler/updatePartition.py ${SATO_INDEX_FILE_NAME} > ${PARTITION_FILE_DENORM}
 
+hdfs dfs -put ${PARTITION_FILE_DENORM} ${prefixpath}/${SATO_INDEX_FILE_NAME}
+
+
+rm -f ${SATO_INDEX_FILE_NAME}
 rm -f ${PARTITION_FILE_DENORM}
 
 echo "Data loaded into ${prefixpath}"

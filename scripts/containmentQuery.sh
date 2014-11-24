@@ -8,7 +8,7 @@ usage(){
   -i MIN_X, --min_x=MIN_X \t The smallest x-coordinate of the query window \n \
   -j MIN_Y, --min_y=MIN_Y \t The smallest y-coordinate of the query window \n \
   -k MAX_X, --max_x=MAX_X \t The largest x-coordinate of the query window \n \
-  -l MAX_Y, --max_y=MAX_Y \t The largest y-coordinate of the query window \n \
+  -l MAX_Y, --max_y=MAX_Y \t The largest y-coordinate of the query window. \
 "
  # -i OBJECT_ID, --obj_id=OBJECT_ID \t The field (position) of the object ID \n \
   exit 1
@@ -102,36 +102,35 @@ PARTITION_FILE=partfile.idx
 PATH_RETRIEVER=../containment/getInputPath.py
 
 if ! [ "${min_x}" ] && ! [ "${min_y}" ] && ! [ "${max_x}" ] && ! [ "${max_y}" ]; then
-     echo "ERROR: Missing query window dimensions"
+     echo "ERROR: Missing query window dimensions. See --help"
      exit 1
 fi
 
 if [ ! "${datapath}" ]; then
-     echo "Error: Missing path to the loaded data"
+     echo "Error: Missing path to the loaded data. See --help"
      exit 1
 fi
 
 if [ ! "${destination}" ]; then
-     echo "Error: Missing path for the result/destination"
+     echo "Error: Missing path for the result/destination. See --help"
      exit 1
 fi
 
-rm -f ${PARTITION_FILE}
-
-TMP_PARTITION_FILE=$(mktemp)
+#TMP_PARTITION_FILE=$(mktemp)
 TMP_INPUT_PATH=$(mktemp)
 
-echo "Creating "${TMP_PARTITION_FILE}
+#echo "Creating "${TMP_PARTITION_FILE}
 echo "Creating "${TMP_INPUT_PATH}
 
-rm ${TMP_PARTITION_FILE}
+# rm ${TMP_PARTITION_FILE}
 hdfs dfs -get ${datapath}/${PARTITION_FILE} ${TMP_PARTITION_FILE}
 
 ###
 ### Need a check for valid data + cfg file in the HDFS path
 ###
 
-../containment/getInputPath.py ${min_x} ${min_y} ${max_x} ${max_y} ${datapath}/data/ < ${TMP_PARTITION_FILE} > ${TMP_INPUT_PATH}
+hdfs dfs -cat ${datapath}/${PARTITION_FILE} | ../containment/getInputPath.py ${min_x} ${min_y} ${max_x} ${max_y} ${datapath}/data/ > ${TMP_INPUT_PATH}
+#../containment/getInputPath.py ${min_x} ${min_y} ${max_x} ${max_y} ${datapath}/data/ < ${TMP_PARTITION_FILE} > ${TMP_INPUT_PATH}
 
 rm ${TMP_PARTITION_FILE}
 num_input_files=`(wc -l "${TMP_INPUT_PATH}" | cut -d" " -f1)`
@@ -142,13 +141,6 @@ if [ ${num_input_files} -eq 0 ]; then
    echo "No object lies within the selected query window"
    exit 0 
 fi
-
-
-# input_path=`( ../containment/getInputPath.py ${min_x} ${min_y} ${max_x} ${max_y} ${datapath}/data/ < "${PARTITION_FILE}" )`
-
-#../containment/getInputPath.py ${min_x} ${min_y} ${max_x} ${max_y} ${datapath} < "${PARTITION_FILE}"
-
-
 
 # Load the configuration file to determine the geometry field
 DATA_CFG_FILE=data.cfg

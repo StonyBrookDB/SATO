@@ -13,7 +13,7 @@ char * filename;
 
 int GEOM_IDX = -1;
 map<int,Geometry*> geom_tiles;
-
+map<int,long> count_tiles;
 /* 
  * The program maps the input tsv data into corresponding partition 
  * (it adds the prefix partition id number at the beginning of the line)
@@ -178,8 +178,9 @@ void genTiles() {
 
 //	cerr << ss.str() << endl;
         id = std::strtoul(fields[0].c_str(), NULL, 0);
-        geom_tiles[id]= wkt_reader->read(ss.str());
-        id_tiles[id] = id;
+        geom_tiles[id] = wkt_reader->read(ss.str());
+        count_tiles[id] = 0;
+	id_tiles[id] = id;
 
 	ss.str(string());
 
@@ -206,6 +207,7 @@ void emitHits(Geometry* poly, string input_line) {
 	cout << hits[i] << TAB << hits[i]  << TAB 
 	// << id_tiles[hits[i]] << TAB 
 	<< input_line <<  endl ;
+	count_tiles[ hits[i] ]++;
     }
 }
 
@@ -301,7 +303,10 @@ int main(int argc, char **argv) {
   
   // build spatial index for input polygons 
 
-
+  for (map<int,long>::iterator it= count_tiles.begin(); it != count_tiles.end(); ++it) {
+    cout << "Stat" << TAB << it->first << TAB << it->second << endl;
+}
+ 
 
 
   cout.flush();
