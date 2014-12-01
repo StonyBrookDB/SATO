@@ -1,4 +1,4 @@
-SATO
+Hadoop-GIS SATO
 ====
 
 Hadoop-GIS SATO version
