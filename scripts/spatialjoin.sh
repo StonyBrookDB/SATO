@@ -9,10 +9,10 @@ usage(){
   -q DISTANCE, --qdistance=DISTANCE \t Distance (for dwithin predicate) \n \
   -d DESTINATION_PATH, --destination=DESTINATION_PATH\tThe HDFS prefix path to store the query result \n \
   -f FIELDS_TO_OUTPUT, --fields=FIELDS_TO_OUTPUT \t The fields to be included in the outputs. The format is comma-separated for fields within 1 data set, and separated by color between datasets. E.g. --fields=1,3,4:2,5,9 \n \
-  -n NUMBER_REDUCERS, --num_reducers=NUM_REDUCERS \t Number of reducers to be used \n \
+  -n NUMBER_REDUCERS, --numreducers=NUM_REDUCERS \t Number of reducers to be used \n \
   -s TRUE_OR_FALSE, --statistics=TRUE_OR_FALSE \t Appending additional spatial join statistics to joined pairs: [true | false]. \n \
   -m PARTITION_METHOD, --method=PARTITION_METHOD \t OPTIONAL - The partitioning method. The default method is fixed grid partitioning. [ fg | bsp ] \n \
-   -r SAMPLING_RATIO, --ratio=SAMPLING_RATIO \t OPTIONAL - The sampling ratio for partitioning the data. Default value is 1.0."
+  -r SAMPLING_RATIO, --ratio=SAMPLING_RATIO \t OPTIONAL - The sampling ratio for partitioning the data. Default value is 1.0."
  # -i OBJECT_ID, --obj_id=OBJECT_ID \t The field (position) of the object ID \n \
   exit 1
 }
@@ -29,10 +29,10 @@ prefixpath2=""
 geomid=""
 delimiter=""
 predicate=""
-sample_ratio=1
+sampleratio=1
 method="fg"
 statistics="false"
-num_reducers=""
+numreducers=""
 qdistance=0
 fields=""
 
@@ -83,12 +83,12 @@ do
           qdistance=${1#*=}
           shift
           ;;
-        -n | --num_reducers)
-          num_reducers=$2
+        -n | --numreducers)
+          numreducers=$2
           shift 2
           ;;
-        --num_reducers=*)
-          num_reducers=${1#*=}
+        --numreducers=*)
+          numreducers=${1#*=}
           shift
           ;;
         -s | --statistics)
@@ -100,11 +100,11 @@ do
           shift
           ;;
         -r | --ratio)
-          sample_ratio=$2
+          sampleratio=$2
           shift 2
           ;;
         --ratio=*)
-          sample_ratio=${1#*=}
+          sampleratio=${1#*=}
           shift
           ;;
         -m | --method)
@@ -157,12 +157,13 @@ if [ ! "${destination}" ]; then
   exit 1
 fi
 
+
 if [ "${predicate}" != "intersects" ] && [ "${predicate}" != "touches" ] && [ "${predicate}" != "crosses" ] && [ "${predicate}" != "contains" ] && [ "${predicate}" != "adjacent" ] && [ "${predicate}" != "disjoint" ] && [ "${predicate}" != "equals" ] && [ "${predicate}" != "dwithin" ] && [ "${predicate}" != "within" ] && [ "${predicate}" != "overlaps" ]; then
    echo "ERROR: Invalid predicate. See --help" >&2
    exit 1
 fi
 
-if ! [[ ${num_reducers} -ge 1 ]]; then
+if ! [[ ${numreducers} -ge 1 ]]; then
   echo "ERROR: Missing the number of reducers. See --help" >&2
   exit 1
 fi
@@ -171,6 +172,12 @@ if ! [ "${method}" == "fg" ] && ! [ "${method}" == "bsp" ] ; then
    echo "Invalid partitioning method"
    exit 1
 fi
+
+fieldsarg=""
+if [ "${fields}" ] ; then
+   fieldsarg="-f ${fields}"
+fi
+
 
 # Creating the path with the HDFS prefix
 hdfs dfs -mkdir -p ${destination}
@@ -266,12 +273,12 @@ if [ "$method" == "fg" ]; then
    ../step_tear/fg/serial/fgNoMbb.py ${min_x} ${min_y} ${max_x} ${max_y} ${partitionSize} ${numobjects} > ${PARTITION_FILE}
 fi
 
+samplepartsize=`(../step_analyze/computeSamplePartSize.py ${partitionSize} ${sampleratio} 1)`
 if [ "$method" == "bsp" ]; then
-   ../step_tear/bsp/serial/bsp -b ${partitionSize} -i ${INPUT_MBB_FILE} > ${PARTITION_FILE}
+   ../step_tear/bsp/serial/bsp -b ${samplepartsize} -i ${INPUT_MBB_FILE} > ${PARTITION_FILE}
 fi
 cat ${PARTITION_FILE}
 echo "Done partitioning"
-
 # Remove temporary files
 rm ${INPUT_MBB_FILE}
 
@@ -298,11 +305,10 @@ hdfs dfs -rm -f -r ${OUTPUT_2}
 predicate="st_"${predicate}
 
 echo "${MAPPER_2} ${geomid1} ${geomid2} ${SATO_INDEX_FILE_NAME} ${prefixpath1} ${prefixpath2}"
-echo "${REDUCER_2} -p ${predicate} -i ${geomid1} -j ${geomid2} -s ${statistics}"
-
+echo "${REDUCER_2} -p ${predicate} -i ${geomid1} -j ${geomid2} -s ${statistics} -d ${qdistance} ${fieldsarg}"
 
 #Perform spatial join
-hadoop jar ${HJAR} -input ${INPUT_2A} -input ${INPUT_2B} -output ${OUTPUT_2} -file ${MAPPER_2_PATH} -file ${REDUCER_2_PATH} -file ${SATO_INDEX_FILE_NAME}  -mapper "${MAPPER_2} ${geomid1} ${geomid2} ${SATO_INDEX_FILE_NAME} ${prefixpath1} ${prefixpath2}" -reducer "${REDUCER_2} -p ${predicate} -i ${geomid1} -j ${geomid2} -s ${statistics} -d ${qdistance} -f ${fields}" -cmdenv LD_LIBRARY_PATH=${LD_CONFIG_PATH} -numReduceTasks ${num_reducers}
+hadoop jar ${HJAR} -input ${INPUT_2A} -input ${INPUT_2B} -output ${OUTPUT_2} -file ${MAPPER_2_PATH} -file ${REDUCER_2_PATH} -file ${SATO_INDEX_FILE_NAME}  -mapper "${MAPPER_2} ${geomid1} ${geomid2} ${SATO_INDEX_FILE_NAME} ${prefixpath1} ${prefixpath2}" -reducer "${REDUCER_2} -p ${predicate} -i ${geomid1} -j ${geomid2} -s ${statistics} -d ${qdistance} ${fieldsarg}" -cmdenv LD_LIBRARY_PATH=${LD_CONFIG_PATH} -numReduceTasks ${numreducers}
 
 if [  $? -ne 0 ]; then
    echo "Spatial computation has failed!"
@@ -319,7 +325,7 @@ REDUCER_3_PATH=../joiner/hgdeduplicater.py
 hdfs dfs -rm -r ${OUTPUT_3}
 echo -e "Deduplication step" 
 
-hadoop jar ${HJAR} -file ${REDUCER_3_PATH} -mapper 'cat -' -reducer "${REDUCER_3} uniq" -input ${INPUT_3} -output ${OUTPUT_3} -numReduceTasks ${num_reducers} -jobconf mapred.task.timeout=360000000
+hadoop jar ${HJAR} -file ${REDUCER_3_PATH} -mapper 'cat -' -reducer "${REDUCER_3} uniq" -input ${INPUT_3} -output ${OUTPUT_3} -numReduceTasks ${numreducers} -jobconf mapred.task.timeout=360000000
 
 succ=$?
 
@@ -327,6 +333,6 @@ if [[ $succ != 0 ]] ; then
     echo -e "\n\n deduplication stage has failed. \nPlease check the output result for debugging."
     exit $succ
 fi
-hdfs dfs -rm ${OUTPUT_2}
+hdfs dfs -rm -r -f ${OUTPUT_2}
 
 echo "Done. Results are available at ${OUTPUT_3}"

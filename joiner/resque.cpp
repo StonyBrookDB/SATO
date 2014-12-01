@@ -415,6 +415,10 @@ int joinBucket()
 
     int len1 = poly_set_one.size();
     int len2 = poly_set_two.size();
+
+    if (len1 <= 0 || len2 <= 0) {
+         return 0;
+    }
     
     map<int,Geometry*> geom_polygons2;
     for (int j = 0; j < len2; j++) {

@@ -9,7 +9,7 @@ usage(){
   -s SEPARATOR, --separator=SEPARATOR \t OPTIONAL - The seperator/delimiter used to separate fields in the original dataset. The default value is tab. \n \
   -r SAMPLING_RATIO, --ratio=SAMPLING_RATIO \t OPTIONAL - The sampling ratio to be used to partition data. Default value is 1.0. \n \
   -m PARTITION_METHOD, --method=PARTITION_METHOD \t OPTIONAL - The partitioning method. The default method is fixed grid partitioning. Options include: fg (fixed grid), bsp (binary space partitioning), sfc (space filling curve) \n \
-  -n NUMBER_REDUCERS, --numreducers=NUMBER_REDUCERS \t OPTIONAL - The number of reducers we need to use \n \
+  -n NUMBER_REDUCERS, --numreducers=NUMBER_REDUCERS \t OPTIONAL - The number of reducers to be used \n \
   -b BLOCK_SIZE, --blocksize=BLOCK_SIZE \t OPTIONAL - The block size in bytes (the default block size is 64MB).\
 "
  # -i OBJECT_ID, --obj_id=OBJECT_ID \t The field (position) of the object ID \n \
@@ -28,7 +28,7 @@ datapath=""
 prefixpath=""
 geomid=""
 delimiter=""
-sample_ratio=1
+sampleratio=1
 method="fg"
 numreducers=20
 
@@ -80,11 +80,11 @@ do
           shift
           ;;
         -r | --ratio)
-          sample_ratio=$2
+          sampleratio=$2
           shift 2
           ;;
         --ratio=*)
-          sample_ratio=${1#*=}
+          sampleratio=${1#*=}
           shift
           ;;
         -m | --method)
@@ -157,7 +157,7 @@ fi
 
 
 # Creating the path with the HDFS prefix
-hdfs dfs -rm -rf ${prefixpath}
+hdfs dfs -rm -r -f ${prefixpath}
 hdfs dfs -mkdir -p ${prefixpath}
 
 INPUT_1=${datapath}
@@ -193,13 +193,13 @@ hdfs dfs -rm -f -r ${OUTPUT_2}
 
 # This is out-dated
 # Optional depending on whether the sampling ratio is 1.0
-#if [ "${sample_ratio}" -lt 1 ]; then
+#if [ "${sampleratio}" -lt 1 ]; then
 #    # perform sampling
-#    hadoop jar ${HJAR} -input ${INPUT_1} -output ${OUTPUT_1} -file ${MAPPER_1_PATH} -mapper "${MAPPER_1} ${delimiter} ${sample_ratio}" -reducer None -numReduceTasks 0
+#    hadoop jar ${HJAR} -input ${INPUT_1} -output ${OUTPUT_1} -file ${MAPPER_1_PATH} -mapper "${MAPPER_1} ${delimiter} ${sampleratio}" -reducer None -numReduceTasks 0
 #fi
 
 echo "Extracting MBRs from objects"
-hadoop jar ${HJAR} -input ${INPUT_2} -output ${OUTPUT_2} -file ${MAPPER_2_PATH} -mapper "${MAPPER_2} ${geomid} ${sample_ratio}" -reducer None -cmdenv LD_LIBRARY_PATH=${LD_CONFIG_PATH} -numReduceTasks 0
+hadoop jar ${HJAR} -input ${INPUT_2} -output ${OUTPUT_2} -file ${MAPPER_2_PATH} -mapper "${MAPPER_2} ${geomid} ${sampleratio}" -reducer None -cmdenv LD_LIBRARY_PATH=${LD_CONFIG_PATH} -numReduceTasks 0
 
 if [ $? -ne 0 ]; then
    echo "Extracting MBRs has failed!"
@@ -225,7 +225,6 @@ hadoop jar ${HJAR} -input ${INPUT_3} -output ${OUTPUT_3} -file ${MAPPER_3_PATH} 
 #rm $TEMP_FILE_NAME
 #create a temporary file
 # TEMP_FILE_NAME="$(mktemp)"
-hdfs dfs -cat ${OUTPUT_3}/part-00000 > ${TEMP_FILE_NAME}
 read min_x min_y max_x max_y num_objects <<< `(hdfs dfs -cat ${OUTPUT_3}/part-00000)`
 
 #rm -f ${TEMP_FILE_NAME}
@@ -272,7 +271,8 @@ echo "Total size in bytes: "${totalSize}
 echo "Number of objects: "${num_objects}
 avgObjSize=$((totalSize / num_objects))
 
-partitionSize=$((blocksize / avgObjSize))
+# partitionSize=$((blocksize * sampleratio / avgObjSize))
+partitionSize=`(../step_analyze/computeSamplePartSize.py ${blocksize} ${sampleratio} ${avgObjSize})`
 
 echo "partitionsize=${partitionSize}" >> ${TEMP_CFG_FILE}
 
@@ -343,8 +343,9 @@ hdfs dfs -put ${PARTITION_FILE_DENORM} ${prefixpath}/${SATO_INDEX_FILE_NAME}
 rm -f ${SATO_INDEX_FILE_NAME}
 rm -f ${PARTITION_FILE_DENORM}
 
-echo "Data loaded into ${prefixpath}"
+hdfs dfs -rm -r -f ${prexipath}/data/Stat
 
+echo "Data loaded into ${prefixpath}"
 #TEMP_FILE_MERGE=/tmp/satomerge
 # Merge small files together
 #cat "${PARTITION_FILE}" | cut -f1 | { while read line
