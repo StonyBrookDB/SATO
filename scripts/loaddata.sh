@@ -199,7 +199,7 @@ hdfs dfs -rm -f -r ${OUTPUT_2}
 #fi
 
 echo "Extracting MBRs from objects"
-hadoop jar ${HJAR} -input ${INPUT_2} -output ${OUTPUT_2} -file ${MAPPER_2_PATH} -mapper "${MAPPER_2} ${geomid} ${sampleratio}" -reducer None -cmdenv LD_LIBRARY_PATH=${LD_CONFIG_PATH} -numReduceTasks 0
+hadoop jar ${HJAR} -D mapreduce.task.timeout=3600000 -input ${INPUT_2} -output ${OUTPUT_2} -file ${MAPPER_2_PATH} -mapper "${MAPPER_2} ${geomid} ${sampleratio}" -reducer None -cmdenv LD_LIBRARY_PATH=${LD_CONFIG_PATH} -numReduceTasks 0
 
 if [ $? -ne 0 ]; then
    echo "Extracting MBRs has failed!"
@@ -229,7 +229,6 @@ read min_x min_y max_x max_y num_objects <<< `(hdfs dfs -cat ${OUTPUT_3}/part-00
 
 #rm -f ${TEMP_FILE_NAME}
 hdfs dfs -rm -f -r ${OUTPUT_3}
-
 TEMP_CFG_FILE="$(mktemp)"
 
 # Outputting the space dimensions
@@ -256,7 +255,7 @@ if ! [ "$method" == "fg" ]; then
      hdfs dfs -rm -f -r ${OUTPUT_4}
 
      echo "Normalizing MBBs"
-     hadoop jar ${HJAR} -input ${INPUT_4} -output ${OUTPUT_4} -file ${MAPPER_4_PATH} -mapper "${MAPPER_4} ${min_x} ${min_y} ${max_x} ${max_y}" -reducer None -numReduceTasks 0
+     hadoop jar ${HJAR}  -D mapreduce.task.timeout=3600000 -input ${INPUT_4} -output ${OUTPUT_4} -file ${MAPPER_4_PATH} -mapper "${MAPPER_4} ${min_x} ${min_y} ${max_x} ${max_y}" -reducer None -numReduceTasks 0
      if [  $? -ne 0 ]; then
           echo "Normalizing MBB has failed!"
           exit 1
@@ -317,18 +316,18 @@ rm ${PARTITION_FILE}
 cp ${PARTITION_FILE_DENORM} ${SATO_INDEX_FILE_NAME}
 
 
-INPUT_5=${OUTPUT_1}
+#INPUT_5=${OUTPUT_1}
+INPUT_5=${prefixpath}/sampledtsv
 OUTPUT_5=${prefixpath}/data
 MAPPER_5=partitionMapper
 MAPPER_5_PATH=../tiler/partitionMapper
 REDUCER_5=hgdeduplicater.py
 REDUCER_5_PATH=../joiner/hgdeduplicater.py
-
 hdfs dfs -rm -f -r ${OUTPUT_5}
 
 echo "Mapping data to create physical partitions"
 #Map the data back to its partition
-hadoop jar ${HJAR} -libjars ../libjar/customLibs.jar -outputformat com.custom.CustomMultiOutputFormat  -input ${INPUT_1} -output ${OUTPUT_5} -file ${MAPPER_5_PATH} -file ${REDUCER_5_PATH} -file ${SATO_INDEX_FILE_NAME}  -mapper "${MAPPER_5} ${geomid} ${SATO_INDEX_FILE_NAME}" -reducer "${REDUCER_5} cat" -cmdenv LD_LIBRARY_PATH=${LD_CONFIG_PATH} -numReduceTasks ${numreducers}
+hadoop jar ${HJAR} -libjars ../libjar/customLibs.jar -outputformat com.custom.CustomMultiOutputFormat  -input ${INPUT_5} -output ${OUTPUT_5} -file ${MAPPER_5_PATH} -file ${REDUCER_5_PATH} -file ${SATO_INDEX_FILE_NAME}  -mapper "${MAPPER_5} ${geomid} ${SATO_INDEX_FILE_NAME}" -reducer "${REDUCER_5} cat" -cmdenv LD_LIBRARY_PATH=${LD_CONFIG_PATH} -numReduceTasks ${numreducers}
 
 if [  $? -ne 0 ]; then
    echo "Mapping data back to its partition has failed!"
