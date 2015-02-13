@@ -20,6 +20,7 @@ usage(){
 HJAR=${HADOOP_STREAMING_PATH}/hadoop-streaming.jar
 # default block size (partition size)
 blocksize=67108864
+#blocksize=134217728
 SATO_CONFIG_FILE_NAME=data.cfg
 SATO_INDEX_FILE_NAME=partfile.idx
 

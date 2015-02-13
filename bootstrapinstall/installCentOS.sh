@@ -4,7 +4,7 @@
 # Some example of installing on CentOS
 yum install -y install cmake
 yum install -y gcc-c++
-(or yum install –y gcc-4.7 g++-4.7)
+# (or yum install –y gcc-4.7 g++-4.7)
 
 wget http://download.osgeo.org/geos/geos-3.3.9.tar.bz2
 tar xvf geos-3.3.9.tar.bz2

@@ -21,13 +21,10 @@ def main():
     space_max_y = float(sys.argv[4])
     space_x_span = space_max_x - space_min_x
     space_y_span = space_max_y - space_min_y
-    sample_ratio = 1
     if len(sys.argv) == 6:
         sample_ratio = float(sys.argv[5])
 
     for line in sys.stdin:
-        if random.random() > sample_ratio:
-            continue
         sp = line.strip().split("\t")
         minx = float(sp[1])
         minx = (minx - space_min_x) / space_x_span
