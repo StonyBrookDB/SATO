@@ -343,7 +343,7 @@ hdfs dfs -put ${PARTITION_FILE_DENORM} ${prefixpath}/${SATO_INDEX_FILE_NAME}
 rm -f ${SATO_INDEX_FILE_NAME}
 rm -f ${PARTITION_FILE_DENORM}
 
-hdfs dfs -rm -r -f ${prexipath}/data/Stat
+hdfs dfs -rm -r -f ${prefixpath}/data/Stat
 
 echo "Data loaded into ${prefixpath}"
 #TEMP_FILE_MERGE=/tmp/satomerge

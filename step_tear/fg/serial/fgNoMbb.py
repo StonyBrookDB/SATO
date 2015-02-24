@@ -28,13 +28,13 @@ def main():
     x_split = y_split = 1
     if span_y > span_x:
         # We prefer to split into more-square regions than long rectangles
-        y_split = math.ceil(math.sqrt(num_object / bucket_size * (span_y /
-                                                                  span_x)))
-        x_split = math.ceil(num_object / bucket_size / y_split)
+        y_split = max(math.ceil(math.sqrt(num_object / bucket_size * (span_y /
+                                                                  span_x))), 1.0)
+        x_split = max(math.ceil(num_object / bucket_size / y_split), 1.0)
     else:
-        x_split = math.ceil(math.sqrt(num_object / bucket_size * (span_x /
-                                                                  span_y)))
-        y_split = math.ceil(num_object / bucket_size / x_split)
+        x_split = max(math.ceil(math.sqrt(num_object / bucket_size * (span_x /
+                                                                  span_y))), 1.0)
+        y_split = max(math.ceil(num_object / bucket_size / x_split), 1.0)
 
     #sys.stderr.write("num_x_split", str(x_split))
     #sys.stderr.write("num_y_split", str(y_split))

@@ -1,6 +1,4 @@
 
-spatial=/home/aaji/softs
-
 UNAME		= $(shell uname)
 OPTFLAGS	= -O2 -Wno-write-strings
 INCBASE		= -I. -I/usr/local/lib -I ${SATO_INC_PATH}
