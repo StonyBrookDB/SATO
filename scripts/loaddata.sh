@@ -126,12 +126,14 @@ do
      esac
 done
 
+
 SATO_CONFIG=../sato.cfg
 # Load the SATO configuration file
 if [ -e "${SATO_CONFIG}" ]; then
   source ${SATO_CONFIG}
 else
   echo "SATO configuration file not found!"
+  exit 1
 fi
 
 LD_CONFIG_PATH=${LD_LIBRARY_PATH}:${SATO_LIB_PATH}
@@ -334,6 +336,7 @@ if [  $? -ne 0 ]; then
    echo "Mapping data back to its partition has failed!"
 fi
 
+hdfs dfs -rm -f -r ${OUTPUT_1}
 #hdfs dfs -rm ${prefixpath}/${SATO_INDEX_FILE_NAME}
 hdfs dfs -cat ${prefixpath}/data/Stat/* | ../tiler/updatePartition.py ${SATO_INDEX_FILE_NAME} > ${PARTITION_FILE_DENORM}
 

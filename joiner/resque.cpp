@@ -6,11 +6,14 @@ map<int, std::vector<string> > rawdata;
 ISpatialIndex * spidx = NULL;
 IStorageManager * storage = NULL;
 
-bool appendstats = true;
+bool appendstats = false;
+bool appendTileID = false;
 double area1 = -1;
 double area2 = -1;
 double union_area = -1;
 double intersect_area = -1;
+string tile_id = "";
+string previd = "";
 
 struct query_op { 
   int JOIN_PREDICATE;
@@ -55,7 +58,6 @@ void print_stop(){
 int mJoinQuery()
 {
   string input_line;
-  string tile_id ;
   string value;
   vector<string> fields;
   int sid = 0;
@@ -64,7 +66,6 @@ int mJoinQuery()
   GeometryFactory *gf = new GeometryFactory(pm,OSM_SRID);
   WKTReader *wkt_reader = new WKTReader(gf);
   Geometry *poly = NULL;
-  string previd = "";
 
   int tile_counter =0;
 
@@ -391,6 +392,9 @@ void ReportResult( int i , int j)
           cout << SEP << area1 << TAB << area2 << TAB << union_area 
               << TAB << intersect_area << TAB << intersect_area / union_area;
       }
+      if (appendTileID) {
+          cout << TAB << previd << endl; 
+      }
       cout << endl;
       break;
     default:
@@ -491,11 +495,12 @@ bool extractParams(int argc, char** argv ){
     {"predicate",  required_argument, 0, 'p'},
     {"fields",     required_argument, 0, 'f'},
     {"stats",     required_argument, 0, 's'},
+    {"tileid",     required_argument, 0, 't'},
     {0, 0, 0, 0}
   };
 
   int c;
-  while ((c = getopt_long (argc, argv, "p:i:j:d:f:s:",long_options, &option_index)) != -1){
+  while ((c = getopt_long (argc, argv, "p:i:j:d:f:s:t:",long_options, &option_index)) != -1){
     switch (c)
     {
       case 0:
@@ -535,6 +540,11 @@ bool extractParams(int argc, char** argv ){
       case 's':
         appendstats = (strcmp(optarg, "true") == 0);
         break;
+
+      case 't':
+	appendTileID = (strcmp(optarg, "true") == 0); 
+        break;
+
       case '?':
         return false;
         /* getopt_long already printed an error message. */
@@ -583,6 +593,8 @@ void usage(){
   cerr << TAB << "-j, --shpidx2"  << TAB << "The index of the geometry field from the smaller dataset. Index value starts from 1." << endl;
   cerr << TAB << "-d, --distance" << TAB << "Used together with st_dwithin predicate to indicates the join distance." 
       << "This field has no effect o other join predicates." << endl;
+  cerr << TAB << "-s, --stats"  << TAB << "[true | false] Include the tileID as the last field of the output" << endl;
+  cerr << TAB << "-t, --tileID"  << TAB << "[true | false] Include the statistics in the join output for intersection: area of object 1, area of object 2, union area, intersect area, Jaccard coefficient (tab-separated)." << endl;
   cerr << TAB << "-f, --fields"   << TAB << "Output field election parameter. Fields from different dataset are separated with a colon (:), " 
       <<"and fields from the same dataset are separated with a comma (,). For example: if we want to only output fields 1, 3, and 5 from " 
       << "the first dataset (indicated with param -i), and output fields 1, 2, and 9 from the second dataset (indicated with param -j) "

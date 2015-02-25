@@ -10,7 +10,8 @@ usage(){
   -d DESTINATION_PATH, --destination=DESTINATION_PATH\tThe HDFS prefix path to store the query result \n \
   -f FIELDS_TO_OUTPUT, --fields=FIELDS_TO_OUTPUT \t The fields to be included in the outputs. The format is comma-separated for fields within 1 data set, and separated by color between datasets. E.g. --fields=1,3,4:2,5,9 \n \
   -n NUMBER_REDUCERS, --numreducers=NUM_REDUCERS \t Number of reducers to be used \n \
-  -s TRUE_OR_FALSE, --statistics=TRUE_OR_FALSE \t Appending additional spatial join statistics to joined pairs: [true | false]. \n \
+  -s TRUE_OR_FALSE, --statistics=TRUE_OR_FALSE \t Appending additional spatial join statistics to joined pairs: [true | false]. The default is false. \n \
+  -t TRUE_OR_FALSE, --tileid=TRUE_OR_FALSE \t Appending (keeping) the tile id as the last field appended to the output [true | false]. The default is false. \n \
   -m PARTITION_METHOD, --method=PARTITION_METHOD \t OPTIONAL - The partitioning method. The default method is fixed grid partitioning. [ fg | bsp ] \n \
   -r SAMPLING_RATIO, --ratio=SAMPLING_RATIO \t OPTIONAL - The sampling ratio for partitioning the data. Default value is 1.0."
  # -i OBJECT_ID, --obj_id=OBJECT_ID \t The field (position) of the object ID \n \
@@ -32,9 +33,11 @@ predicate=""
 sampleratio=1
 method="fg"
 statistics="false"
+tileid="false"
 numreducers=""
 qdistance=0
 fields=""
+deduparg="uniq"
 
 while : 
 do
@@ -99,6 +102,14 @@ do
           statistics=${1#*=}
           shift
           ;;
+        -t | --tileid)
+          tileid=$2
+          shift 2
+          ;;
+        --tileid=*)
+          tileid=${1#*=}
+          shift
+          ;;
         -r | --ratio)
           sampleratio=$2
           shift 2
@@ -143,6 +154,7 @@ if [ -e "${SATO_CONFIG}" ]; then
   source ${SATO_CONFIG}
 else
   echo "SATO configuration file not found!"
+  exit 1
 fi
 
 LD_CONFIG_PATH=${LD_LIBRARY_PATH}:${SATO_LIB_PATH}
@@ -177,7 +189,11 @@ fieldsarg=""
 if [ "${fields}" ] ; then
    fieldsarg="-f ${fields}"
 fi
-
+tileidarg=""
+if [ "${tileid}" ] ; then
+   tileidarg="-t ${tileid}"
+   deduparg="uniq2"
+fi
 
 # Creating the path with the HDFS prefix
 hdfs dfs -mkdir -p ${destination}
@@ -305,10 +321,10 @@ hdfs dfs -rm -f -r ${OUTPUT_2}
 predicate="st_"${predicate}
 
 echo "${MAPPER_2} ${geomid1} ${geomid2} ${SATO_INDEX_FILE_NAME} ${prefixpath1} ${prefixpath2}"
-echo "${REDUCER_2} -p ${predicate} -i ${geomid1} -j ${geomid2} -s ${statistics} -d ${qdistance} ${fieldsarg}"
+echo "${REDUCER_2} -p ${predicate} -i ${geomid1} -j ${geomid2} -s ${statistics} -d ${qdistance} ${fieldsarg} ${tileidarg}"
 
 #Perform spatial join
-hadoop jar ${HJAR} -input ${INPUT_2A} -input ${INPUT_2B} -output ${OUTPUT_2} -file ${MAPPER_2_PATH} -file ${REDUCER_2_PATH} -file ${SATO_INDEX_FILE_NAME}  -mapper "${MAPPER_2} ${geomid1} ${geomid2} ${SATO_INDEX_FILE_NAME} ${prefixpath1} ${prefixpath2}" -reducer "${REDUCER_2} -p ${predicate} -i ${geomid1} -j ${geomid2} -s ${statistics} -d ${qdistance} ${fieldsarg}" -cmdenv LD_LIBRARY_PATH=${LD_CONFIG_PATH} -numReduceTasks ${numreducers}
+hadoop jar ${HJAR} -input ${INPUT_2A} -input ${INPUT_2B} -output ${OUTPUT_2} -file ${MAPPER_2_PATH} -file ${REDUCER_2_PATH} -file ${SATO_INDEX_FILE_NAME}  -mapper "${MAPPER_2} ${geomid1} ${geomid2} ${SATO_INDEX_FILE_NAME} ${prefixpath1} ${prefixpath2}" -reducer "${REDUCER_2} -p ${predicate} -i ${geomid1} -j ${geomid2} -s ${statistics} -d ${qdistance} ${fieldsarg} ${tileidarg}" -cmdenv LD_LIBRARY_PATH=${LD_CONFIG_PATH} -numReduceTasks ${numreducers}
 
 if [  $? -ne 0 ]; then
    echo "Spatial computation has failed!"
@@ -325,7 +341,7 @@ REDUCER_3_PATH=../joiner/hgdeduplicater.py
 hdfs dfs -rm -r ${OUTPUT_3}
 echo -e "Deduplication step" 
 
-hadoop jar ${HJAR} -file ${REDUCER_3_PATH} -mapper 'cat -' -reducer "${REDUCER_3} uniq" -input ${INPUT_3} -output ${OUTPUT_3} -numReduceTasks ${numreducers} -jobconf mapred.task.timeout=360000000
+hadoop jar ${HJAR} -file ${REDUCER_3_PATH} -mapper 'cat -' -reducer "${REDUCER_3} ${deduparg}" -input ${INPUT_3} -output ${OUTPUT_3} -numReduceTasks ${numreducers} -jobconf mapred.task.timeout=360000000
 
 succ=$?
 
