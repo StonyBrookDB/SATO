@@ -466,7 +466,7 @@ int joinBucket()
             const Envelope * env2 = geom2->getEnvelopeInternal();
             if (join_with_predicate(geom1, geom2, env1, env2,
                     stop.JOIN_PREDICATE))  {
-              ReportResult(i,j);
+              ReportResult(i,hits[j]);
               pairs++;
             }
         }
