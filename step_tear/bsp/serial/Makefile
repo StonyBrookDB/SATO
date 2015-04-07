@@ -33,6 +33,8 @@ bsp.o: BinarySplitNode.cpp commonspatial.h
 bsp: main.cpp commonspatial.h $(Obj)
 	$(CXX) $^ $(CFLAGS) $(LDFLAGS) -o $@
 
+bspPais: mainPais.cpp commonspatial.h $(Obj)
+	$(CXX) $^ $(CFLAGS) $(LDFLAGS) -o $@
 
 clean:
 	@rm -f $(TARGET) $(Obj)

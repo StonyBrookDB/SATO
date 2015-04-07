@@ -104,7 +104,6 @@ int mJoinQuery()
       std::cerr << "******Geometry Parsing Error******" << std::endl;
       return -1;
     }
-
     if (previd.compare(tile_id) !=0 && previd.size() > 0 ) {
       int  pairs = joinBucket();
       std::cerr <<"T[" << previd << "] |" << polydata[SID_1].size() << "|x|" << polydata[SID_2].size() << "|=|" << pairs << "|" <<std::endl;
@@ -202,6 +201,9 @@ bool join_with_predicate(const Geometry * geom1 , const Geometry * geom2,
              union_area = geomUni->getArea();
              geomIntersect = geom1->intersection(geom2);
              intersect_area = geomIntersect->getArea();
+	     delete geomUni;
+	     delete geomIntersect;
+
       }
       break;
 
@@ -242,6 +244,8 @@ bool join_with_predicate(const Geometry * geom1 , const Geometry * geom2,
         cerr << "NULL: geom_buffer1" <<endl;
 
       flag = join_with_predicate(geom_buffer1,geom2, env1, env2, ST_INTERSECTS);
+
+
       break;
 
     case ST_WITHIN:
@@ -469,6 +473,8 @@ int joinBucket()
               ReportResult(i,hits[j]);
               pairs++;
             }
+            // memory leak before
+            //delete env2;
         }
     }
   } // end of try

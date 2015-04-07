@@ -1,6 +1,8 @@
 #include "hadoopgis.h"
 #include "cmdline.h"
 #include <string>
+#include <cstring>
+#include <cstdlib>
 
 GeometryFactory *gf = NULL;
 WKTReader *wkt_reader = NULL;
@@ -12,8 +14,10 @@ char * prefix;
 char * filename;
 
 int GEOM_IDX = -1;
+int JOIN_IDX = -1;
+
 map<int,Geometry*> geom_tiles;
-map<int,long> count_tiles;
+
 /* 
  * The program maps the input tsv data into corresponding partition 
  * (it adds the prefix partition id number at the beginning of the line)
@@ -156,7 +160,6 @@ void genTiles() {
     vector<Geometry*> tiles;
     string input_line2;
     stringstream ss;
-
     vector<string> fields;
     double min_x, min_y, max_x, max_y;
     id_type id;
@@ -176,12 +179,10 @@ void genTiles() {
 	 << max_x << SPACE << min_y << COMMA
 	 << min_x << SPACE << min_y << shapeend;
 
-//	cerr << ss.str() << endl;
-//        id = std::strtoul(fields[0].c_str(), NULL, 0);
-        string iddes = fields[0];
-        geom_tiles[id] = wkt_reader->read(ss.str());
-        count_tiles[id] = 0;
-	id_tiles[id] = iddes;
+	// cerr << ss.str() << endl;
+        id = std::strtoul(fields[0].c_str(), NULL, 0);
+        geom_tiles[id]= wkt_reader->read(ss.str());
+        id_tiles[id] = id;
 
 	ss.str(string());
 
@@ -205,10 +206,9 @@ void emitHits(Geometry* poly, string input_line) {
 	/* The first id of the the intersecting tile is used to 
  	 *
  	 * determine the name of the output file*/
-	cout << hits[i] << TAB << hits[i]  << TAB 
+	cout <<  hits[i] << TAB << JOIN_IDX << TAB << JOIN_IDX << TAB // legacy field (extra)
 	// << id_tiles[hits[i]] << TAB 
 	<< input_line <<  endl ;
-	count_tiles[ hits[i] ]++;
     }
 }
 
@@ -231,25 +231,39 @@ bool buildIndex() {
 
 int main(int argc, char **argv) {
 
-  if (argc != 3) {
+  if (argc != 6 && argc != 5) {
      cerr << "ERROR: Not enough arguments. Usage: " << argv[0]
-            << " [geomd_id] [partition_file]" << endl;
+            << " [geomid1] [geomid2] [partition_file] [prefixpath1] [prefixpath2]" << endl;
      return -1;
   }
   //int uid_idx  = args_info.uid_arg;
-  GEOM_IDX = atoi(argv[1]) - 1;
-  filename = argv[2];
+  filename = argv[3];
+  GEOM_IDX = 2;
+  JOIN_IDX = -1;
 
-  /* 
-     cerr << "min_x "<< min_x << endl; 
-     cerr << "max_x "<< max_x << endl; 
-     cerr << "min_y "<< min_y << endl; 
-     cerr << "max_y "<< max_y << endl; 
-     cerr << "x_split "<< x_split << endl; 
-     cerr << "y_split "<< y_split << endl; 
-     */
+  char* stdinfilename = getenv("mapreduce_map_input_file");
+  char* prefix1 = argv[4];
+  char* prefix2 = NULL;
+  if (argc == 6) {
+     prefix2 = argv[5];
+  }
 
-  // initlize the GEOS ibjects
+  if ( strstr(stdinfilename, prefix1) == NULL) {
+     JOIN_IDX = 2;
+     GEOM_IDX = atoi(argv[2]) - 1;
+  } else {
+     JOIN_IDX = 1;
+     GEOM_IDX = atoi(argv[1]) - 1;
+  }
+ 
+
+ // cerr << "JOIN_IDX: " << JOIN_IDX << " Geom: " << GEOM_IDX <<endl;
+
+  if (JOIN_IDX < 0) {
+        cerr << "Invalid join index" << endl;
+        return -1;
+   }
+
   gf = new GeometryFactory(new PrecisionModel(),0);
   wkt_reader= new WKTReader(gf);
 
@@ -258,7 +272,6 @@ int main(int argc, char **argv) {
   // map<int,Geometry*> geom_polygons;
   string input_line;
   vector<string> fields;
-  cerr << "Reading input from stdin..." <<endl; 
   id_type id = 0; 
   Geometry* geom ; 
 
@@ -275,10 +288,9 @@ int main(int argc, char **argv) {
 #endif
 
 
-
+  cerr << "Reading input from stdin..." <<endl; 
   while(cin && getline(cin, input_line) && !cin.eof()){
     fields = parse(input_line);
-
     if (fields[GEOM_IDX].length() <2 )
     {
 #ifndef NDEBUG
@@ -295,7 +307,7 @@ int main(int argc, char **argv) {
       cerr << input_line << endl;
       continue ;
       }*/
-
+//     cout << input_line << endl;
      doQuery(geom);
      emitHits(geom, input_line);
   }
@@ -304,10 +316,7 @@ int main(int argc, char **argv) {
   
   // build spatial index for input polygons 
 
-  for (map<int,long>::iterator it= count_tiles.begin(); it != count_tiles.end(); ++it) {
-    cout << "Stat" << TAB << it->first << TAB << it->second << endl;
-}
- 
+
 
 
   cout.flush();
