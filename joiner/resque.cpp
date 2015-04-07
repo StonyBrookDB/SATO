@@ -203,7 +203,6 @@ bool join_with_predicate(const Geometry * geom1 , const Geometry * geom2,
              intersect_area = geomIntersect->getArea();
 	     delete geomUni;
 	     delete geomIntersect;
-
       }
       break;
 
@@ -473,8 +472,6 @@ int joinBucket()
               ReportResult(i,hits[j]);
               pairs++;
             }
-            // memory leak before
-            //delete env2;
         }
     }
   } // end of try
