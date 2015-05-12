@@ -319,8 +319,8 @@ rm ${PARTITION_FILE}
 cp ${PARTITION_FILE_DENORM} ${SATO_INDEX_FILE_NAME}
 
 
-#INPUT_5=${OUTPUT_1}
-INPUT_5=${prefixpath}/sampledtsv
+INPUT_5=${INPUT_1}
+#INPUT_5=${prefixpath}/sampledtsv
 OUTPUT_5=${prefixpath}/data
 MAPPER_5=partitionMapper
 MAPPER_5_PATH=../tiler/partitionMapper
