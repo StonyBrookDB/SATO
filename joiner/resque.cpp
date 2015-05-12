@@ -189,10 +189,13 @@ bool join_with_predicate(const Geometry * geom1 , const Geometry * geom2,
   Geometry* geomUni = NULL;
   Geometry* geomIntersect = NULL; 
 
-
   switch (jp){
 
     case ST_INTERSECTS:
+      cerr << "1: " << env1->toString() << " and " << geom1->toString() << endl;
+      cerr << "2: " << env2->toString() << " and " << geom2->toString() << endl;
+   
+      cerr << "touching: " <<  env1->intersects(env2) << endl;
       flag = env1->intersects(env2) && geom1->intersects(geom2);
       if (flag && appendstats) {
              area1 = geom1->getArea();
@@ -231,19 +234,29 @@ bool join_with_predicate(const Geometry * geom1 , const Geometry * geom2,
       break;
 
     case ST_DWITHIN:
+      /* Special (exact) spatial handling for point-point distance case */
+      if (geom1->getGeometryTypeId() == geos::geom::GEOS_POINT &&
+         geom2->getGeometryTypeId() == geos::geom::GEOS_POINT) {
+          const geos::geom::Point* p1 = dynamic_cast<const geos::geom::Point*>(geom1);
+          const geos::geom::Point* p2 = dynamic_cast<const geos::geom::Point*>(geom2);
+          flag = pow(p1->getX() - p2->getX(), 2) + pow(p1->getY() - p2->getY(), 2) <= pow(stop.expansion_distance, 2);
+          break;
+     }
+
       buffer_op1 = new BufferOp(geom1);
       // buffer_op2 = new BufferOp(geom2);
       if (NULL == buffer_op1)
         cerr << "NULL: buffer_op1" <<endl;
 
       geom_buffer1 = buffer_op1->getResultGeometry(stop.expansion_distance);
+      env1 = geom_buffer1->getEnvelopeInternal();
       // geom_buffer2 = buffer_op2->getResultGeometry(expansion_distance);
       //Envelope * env_temp = geom_buffer1->getEnvelopeInternal();
       if (NULL == geom_buffer1)
         cerr << "NULL: geom_buffer1" <<endl;
 
       flag = join_with_predicate(geom_buffer1,geom2, env1, env2, ST_INTERSECTS);
-
+      delete geom_buffer1;
 
       break;
 
@@ -454,7 +467,6 @@ int joinBucket()
             high[0] += stop.expansion_distance;
             high[1] += stop.expansion_distance;
         }
-        
         Region r(low, high, 2);
         hits.clear();
         MyVisitor vis;
