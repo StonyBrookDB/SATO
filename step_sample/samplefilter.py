@@ -23,15 +23,15 @@ def main():
     for line in sys.stdin:
         # Split based on the original field delimiter
         sp = line.strip().split(delimiter)
-
+        
         # Add your filters here
         # Example:
         #if len(sp[0]) < 0: # Skip object if the default id field is less than 0
         #    continue
 
         # Uniformly sample
-        if random.random() < float(ratio):
-            print ("\t".join(sp))
+        # if random.random() < float(ratio):
+        print ("\t".join(sp))
             
 
     sys.stdout.flush()

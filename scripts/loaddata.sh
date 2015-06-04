@@ -315,6 +315,7 @@ PARTITION_FILE_DENORM=partfiledenorm
 # Denormalize the MBB file and copy them to HDFS
 python ../step_tear/denormalize.py ${min_x} ${min_y} ${max_x} ${max_y}  < ${PARTITION_FILE} > ${PARTITION_FILE_DENORM}
 # Copy the partition region mbb file onto HDFS
+
 rm ${PARTITION_FILE}
 cp ${PARTITION_FILE_DENORM} ${SATO_INDEX_FILE_NAME}
 
@@ -327,6 +328,8 @@ MAPPER_5_PATH=../tiler/partitionMapper
 REDUCER_5=hgdeduplicater.py
 REDUCER_5_PATH=../joiner/hgdeduplicater.py
 hdfs dfs -rm -f -r ${OUTPUT_5}
+cat ${SATO_INDEX_FILE_NAME}
+
 
 echo "Mapping data to create physical partitions"
 #Map the data back to its partition
@@ -336,6 +339,7 @@ if [  $? -ne 0 ]; then
    echo "Mapping data back to its partition has failed!"
 fi
 
+
 hdfs dfs -rm -f -r ${OUTPUT_1}
 #hdfs dfs -rm ${prefixpath}/${SATO_INDEX_FILE_NAME}
 hdfs dfs -cat ${prefixpath}/data/Stat/* | ../tiler/updatePartition.py ${SATO_INDEX_FILE_NAME} > ${PARTITION_FILE_DENORM}
@@ -343,11 +347,10 @@ hdfs dfs -cat ${prefixpath}/data/Stat/* | ../tiler/updatePartition.py ${SATO_IND
 hdfs dfs -put ${PARTITION_FILE_DENORM} ${prefixpath}/${SATO_INDEX_FILE_NAME}
 
 
-rm -f ${SATO_INDEX_FILE_NAME}
-rm -f ${PARTITION_FILE_DENORM}
-
 hdfs dfs -rm -r -f ${prefixpath}/data/Stat
 
+rm -f ${SATO_INDEX_FILE_NAME}
+rm -f ${PARTITION_FILE_DENORM}
 echo "Data loaded into ${prefixpath}"
 #TEMP_FILE_MERGE=/tmp/satomerge
 # Merge small files together

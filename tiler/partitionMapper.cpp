@@ -177,7 +177,7 @@ void genTiles() {
 	 << min_x << SPACE << min_y << shapeend;
 
 //	cerr << ss.str() << endl;
-//        id = std::strtoul(fields[0].c_str(), NULL, 0);
+	id = std::strtoul(fields[0].c_str(), NULL, 0);
         string iddes = fields[0];
         geom_tiles[id] = wkt_reader->read(ss.str());
         count_tiles[id] = 0;
