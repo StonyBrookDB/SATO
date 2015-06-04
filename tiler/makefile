@@ -42,15 +42,17 @@ mbbextractor: cmd.o mbbextractor.cpp hadoopgis.h tokenizer.h
 	$(CC) mbbextractor.cpp cmd.o $(CFLAGS) $(LDFLAGS) $(OPTFLAGS) -o mbbextractor
 
 partitionMapper: cmd.o partitionMapper.cpp hadoopgis.h tokenizer.h
-	$(CC) -std=c++0x partitionMapper.cpp cmd.o $(CFLAGS) $(LDFLAGS) $(OPTFLAGS) -o partitionMapper
+	$(CC) -std=c++0x partitionMapper.cpp cmd.o -Wall $(CFLAGS) $(LDFLAGS) $(OPTFLAGS) -o partitionMapper
 
 partitionMapperJoin: cmd.o partitionMapperJoin.cpp hadoopgis.h tokenizer.h
 	$(CC) -std=c++0x partitionMapperJoin.cpp cmd.o $(CFLAGS) $(LDFLAGS) $(OPTFLAGS) -o partitionMapperJoin 
 
 partitionMapperJoinUnloaded: cmd.o partitionMapperJoinUnloaded.cpp hadoopgis.h tokenizer.h
 	$(CC) -std=c++0x partitionMapperJoinUnloaded.cpp cmd.o $(CFLAGS) $(LDFLAGS) $(OPTFLAGS) -o partitionMapperJoinUnloaded
-partitionMapperSpec: cmd.o partitionMapperSpec.cpp hadoopgis.h tokenizer.h
-	$(CC) -std=c++0x partitionMapperSpec.cpp cmd.o $(CFLAGS) $(LDFLAGS) $(OPTFLAGS) -o partitionMapperSpec
+
+
+#partitionMapperSpec: cmd.o partitionMapperSpec.cpp hadoopgis.h tokenizer.h
+#	$(CC) -std=c++0x partitionMapperSpec.cpp cmd.o $(CFLAGS) $(LDFLAGS) $(OPTFLAGS) -o partitionMapperSpec
 
 clean:
 	@rm -f *.o hgtiler mbbextractor

@@ -298,17 +298,24 @@ int main(int argc, char **argv) {
 
      doQuery(geom);
      emitHits(geom, input_line);
+
+     // Memory cleaning
+     delete geom;
   }
 
  // cerr << "Number of tiles: " << geom_tiles.size() << endl;
   
   // build spatial index for input polygons 
-
-  for (map<int,long>::iterator it= count_tiles.begin(); it != count_tiles.end(); ++it) {
+  for (map<int,long>::iterator it = count_tiles.begin(); it != count_tiles.end(); ++it) {
     cout << "Stat" << TAB << it->first << TAB << it->second << endl;
-}
+  }
  
 
+  for (map<int,Geometry*>::iterator it = geom_tiles.begin(); it != geom_tiles.end(); ++it) {
+     delete(it->second);
+  }
+  count_tiles.clear();
+  geom_tiles.clear();
 
   cout.flush();
   cerr.flush();

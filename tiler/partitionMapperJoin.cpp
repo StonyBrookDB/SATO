@@ -311,6 +311,7 @@ int main(int argc, char **argv) {
 //     cout << input_line << endl;
      doQuery(geom);
      emitHits(geom, input_line);
+     delete geom;
   }
 
  // cerr << "Number of tiles: " << geom_tiles.size() << endl;
