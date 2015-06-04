@@ -92,6 +92,7 @@ int main(int argc, char **argv) {
         cout << count++ << TAB  << env->getMinX() << TAB << env->getMinY() << TAB 
           << env->getMaxX() << TAB << env->getMaxY() << endl;
     }
+    delete geom;
   }
 
   cout.flush();
