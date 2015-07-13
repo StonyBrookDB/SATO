@@ -317,6 +317,7 @@ python ../step_tear/denormalize.py ${min_x} ${min_y} ${max_x} ${max_y}  < ${PART
 # Copy the partition region mbb file onto HDFS
 
 rm ${PARTITION_FILE}
+cp ${PARTITION_FILE_DENORM} partfiledenormalized
 cp ${PARTITION_FILE_DENORM} ${SATO_INDEX_FILE_NAME}
 
 
@@ -329,6 +330,9 @@ REDUCER_5=hgdeduplicater.py
 REDUCER_5_PATH=../joiner/hgdeduplicater.py
 hdfs dfs -rm -f -r ${OUTPUT_5}
 cat ${SATO_INDEX_FILE_NAME}
+
+### DEBUGGING PURPOSE
+numreducers=0
 
 
 echo "Mapping data to create physical partitions"

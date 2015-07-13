@@ -53,11 +53,11 @@ int main(int argc, char **argv) {
     max_x = strtod(argv[3], NULL);
     max_y = strtod(argv[4], NULL);
 
-    ss << shapebegin << min_x << SPACE << min_y << COMMA
+    ss << WKT_POLYGON_SHAPE_BEGIN << min_x << SPACE << min_y << COMMA
          << min_x << SPACE << max_y << COMMA
          << max_x << SPACE << max_y << COMMA
          << max_x << SPACE << min_y << COMMA
-         << min_x << SPACE << min_y << shapeend;
+         << min_x << SPACE << min_y << WKT_POLYGON_SHAPE_END;
      window = wkt_reader->read(ss.str());
   } else {
      std::ifstream windowFile(argv[6]);

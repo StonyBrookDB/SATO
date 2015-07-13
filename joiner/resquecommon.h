@@ -47,6 +47,21 @@ const int ST_OVERLAPS = 10;
 const int SID_1 = 1;
 const int SID_2 = 2;
 
+// Constants for output statistics
+const int STATS_AREA_1 = -1;
+const int STATS_AREA_2 = -2;
+const int STATS_UNION_AREA = -3;
+const int STATS_INTERSECT_AREA = -4;
+const int STATS_JACCARD_COEF = -5;
+const int STATS_DICE_COEF = -6;
+
+const string PARAM_STATS_AREA_1 = "area1";
+const string PARAM_STATS_AREA_2 = "area2";
+const string PARAM_STATS_UNION_AREA = "union";
+const string PARAM_STATS_INTERSECT_AREA = "intersect";
+const string PARAM_STATS_JACCARD_COEF = "jaccard";
+const string PARAM_STATS_DICE_COEF = "dice";
+
 // separators for parsing
 const string TAB = "\t";
 const string SEP = "\t"; // ctrl+a
@@ -55,13 +70,15 @@ const string DASH= "-";
 const string COMMA = ",";
 const string SPACE = " ";
 
-const string shapebegin = "POLYGON((";
-const string shapeend = "))";
+const string WKT_POLYGON_SHAPE_BEGIN = "POLYGON((";
+const string WKT_POLYGON_SHAPE_END = "))";
 
 vector<id_type> hits;
 
 RTree::Data* parseInputPolygon(Geometry *p, id_type m_id);
 
+
+/* Class used for R-tree traversal */
 class MyVisitor : public IVisitor
 {
     public:
